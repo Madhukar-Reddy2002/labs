@@ -4,28 +4,25 @@ import { supabase } from '../lib/supabase'
 import { useProject } from '../context/ProjectContext'
 import { 
   DndContext, DragOverlay, closestCorners, useSensor, useSensors, 
-  PointerSensor, KeyboardSensor, useDraggable, useDroppable 
+  PointerSensor, TouchSensor, KeyboardSensor, useDraggable, useDroppable 
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import toast from 'react-hot-toast'
 import { 
   Layers, Plus, Clock, CheckCircle, Search, X, Filter, Calendar as CalendarIcon, 
-  Award, Play, PauseCircle, Target, TrendingUp, Zap, ChevronDown, ChevronLeft, 
-  ChevronRight, Grid3x3, Sparkles, AlertCircle, Image as ImageIcon, Link as LinkIcon, 
-  Trophy, ArrowRight, SlidersHorizontal
+  Play, Target, TrendingUp, ChevronLeft, ChevronRight, Grid3x3, Sparkles, 
+  AlertCircle, Image as ImageIcon, Link as LinkIcon, Trophy, ArrowRight, 
+  SlidersHorizontal
 } from 'lucide-react'
 
 const COLUMNS = [
   { id: 'Backlog', label: 'Backlog', icon: Layers, gradient: 'from-slate-400 to-slate-600' }, 
   { id: 'Planned', label: 'Planned', icon: CalendarIcon, gradient: 'from-blue-500 to-cyan-500' },
   { id: 'Running', label: 'Live', icon: Play, gradient: 'from-indigo-500 to-purple-600' },
-  { id: 'Completed', label: 'Done', icon: CheckCircle, gradient: 'from-emerald-500 to-teal-600' },
-  // { id: 'Paused', label: 'Paused', icon: PauseCircle, gradient: 'from-amber-500 to-orange-600' }
+  { id: 'Completed', label: 'Done', icon: CheckCircle, gradient: 'from-emerald-500 to-teal-600' }
 ]
 
 const CATEGORIES = ['Form Test', 'Content Changes', 'Trust Value', 'Design Changes', 'Copy Changes', 'Pricing Test', 'Navigation', 'Other']
-
-// ===== STAGE TRANSITION MODALS =====
 
 function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
   const [formData, setFormData] = useState({
@@ -63,7 +60,6 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
     try {
       let updates = { status: newStatus }
 
-      // PLANNED: Require dates
       if (newStatus === 'Planned') {
         if (!formData.planned_start_date || !formData.planned_end_date) {
           throw new Error('Please provide expected start and end dates')
@@ -72,14 +68,12 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
         updates.planned_end_date = formData.planned_end_date
       }
 
-      // RUNNING: Require actual start + variant URLs
       if (newStatus === 'Running') {
         if (!formData.actual_start_date) {
           throw new Error('Please provide actual start date')
         }
         updates.actual_start_date = formData.actual_start_date
         
-        // Update variant URLs
         for (const [variantId, url] of Object.entries(formData.variantUrls)) {
           if (url.trim()) {
             await supabase
@@ -90,7 +84,6 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
         }
       }
 
-      // COMPLETED: Require end date + outcome
       if (newStatus === 'Completed') {
         if (!formData.actual_end_date) {
           throw new Error('Please provide actual end date')
@@ -103,7 +96,6 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
         updates.winner_variant_id = formData.outcome === 'Winner' ? formData.winner_variant_id : null
       }
 
-      // PAUSED: Just set end date
       if (newStatus === 'Paused') {
         updates.actual_end_date = new Date().toISOString()
       }
@@ -125,22 +117,22 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
   }
 
   const renderContent = () => {
-    // PLANNED
     if (newStatus === 'Planned') {
       return (
         <div className="space-y-4">
-          <div className="glass-card p-4 border-l-4 border-blue-500">
-            <p className="text-sm text-slate-700 font-medium mb-3">
-              📅 Set your expected timeline for this experiment
+          <div className="neumorphic-inset p-5 border-l-4 border-blue-500 rounded-2xl">
+            <p className="text-sm text-slate-700 font-semibold mb-4 flex items-center gap-2">
+              <CalendarIcon size={16} className="text-blue-500" />
+              Set your expected timeline
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-2">Expected Start</label>
                 <input
                   type="date"
                   value={formData.planned_start_date}
                   onChange={e => setFormData(prev => ({ ...prev, planned_start_date: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none"
+                  className="w-[92%] px-3 py-2.5 neumorphic-input rounded-xl text-sm"
                 />
               </div>
               <div>
@@ -149,7 +141,7 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
                   type="date"
                   value={formData.planned_end_date}
                   onChange={e => setFormData(prev => ({ ...prev, planned_end_date: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none"
+                  className="w-[92%] px-3 py-2.5 neumorphic-input rounded-xl text-sm"
                 />
               </div>
             </div>
@@ -158,13 +150,13 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
       )
     }
 
-    // RUNNING
     if (newStatus === 'Running') {
       return (
         <div className="space-y-4">
-          <div className="glass-card p-4 border-l-4 border-indigo-500">
-            <p className="text-sm text-slate-700 font-medium mb-3">
-              🚀 Launching experiment - set actual start date and variant URLs
+          <div className="neumorphic-inset p-5 border-l-4 border-indigo-500 rounded-2xl">
+            <p className="text-sm text-slate-700 font-semibold mb-4 flex items-center gap-2">
+              <Play size={16} className="text-indigo-500" />
+              Launch configuration
             </p>
             <div className="mb-4">
               <label className="block text-xs font-bold text-slate-600 mb-2">Actual Start Date</label>
@@ -172,16 +164,16 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
                 type="date"
                 value={formData.actual_start_date}
                 onChange={e => setFormData(prev => ({ ...prev, actual_start_date: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl border-2 border-slate-200 focus:border-indigo-500 outline-none"
+                className="w-[95%] px-3 py-2.5 neumorphic-input rounded-xl text-sm"
               />
             </div>
             
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-slate-600">Variant URLs (Optional but Recommended)</label>
+              <label className="block text-xs font-bold text-slate-600">Variant URLs (Optional)</label>
               {variants.map(v => (
-                <div key={v.id} className="flex items-center gap-2">
+                <div key={v.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                   <span className="text-xs font-bold text-slate-500 min-w-[80px]">{v.variant_name}</span>
-                  <div className="relative flex-1">
+                  <div className="relative flex-1 w-full">
                     <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                     <input
                       type="url"
@@ -191,7 +183,7 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
                         ...prev, 
                         variantUrls: { ...prev.variantUrls, [v.id]: e.target.value }
                       }))}
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border-2 border-slate-200 focus:border-indigo-500 outline-none"
+                      className="w-[90%] pl-9 pr-3 py-2 text-sm neumorphic-input rounded-xl"
                     />
                   </div>
                 </div>
@@ -199,11 +191,11 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
             </div>
           </div>
           
-          <div className="glass-card p-3 bg-amber-50 border border-amber-200">
+          <div className="glass-card-subtle p-3 bg-amber-50/80 border border-amber-200/50 rounded-xl">
             <div className="flex gap-2">
               <ImageIcon size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-amber-800">
-                <strong>Reminder:</strong> Upload variant screenshots in the Experiment Details page for better tracking.
+                <strong>Reminder:</strong> Upload variant screenshots in Experiment Details.
               </p>
             </div>
           </div>
@@ -211,15 +203,15 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
       )
     }
 
-    // COMPLETED
     if (newStatus === 'Completed') {
       const winnerVariants = variants.filter(v => !v.is_control)
       
       return (
         <div className="space-y-4">
-          <div className="glass-card p-4 border-l-4 border-emerald-500">
-            <p className="text-sm text-slate-700 font-medium mb-3">
-              🏁 Conclude experiment and declare results
+          <div className="neumorphic-inset p-5 border-l-4 border-emerald-500 rounded-2xl">
+            <p className="text-sm text-slate-700 font-semibold mb-4 flex items-center gap-2">
+              <CheckCircle size={16} className="text-emerald-500" />
+              Conclude experiment
             </p>
             
             <div className="mb-4">
@@ -228,7 +220,7 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
                 type="date"
                 value={formData.actual_end_date}
                 onChange={e => setFormData(prev => ({ ...prev, actual_end_date: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl border-2 border-slate-200 focus:border-emerald-500 outline-none"
+                className="w-[92%] px-3 py-2.5 neumorphic-input rounded-xl text-sm"
               />
             </div>
 
@@ -237,11 +229,11 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
               <select
                 value={formData.outcome}
                 onChange={e => setFormData(prev => ({ ...prev, outcome: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl border-2 border-slate-200 focus:border-emerald-500 outline-none"
+                className="w-[95%] px-3 py-2.5 neumorphic-input rounded-xl text-sm"
               >
-                <option value="Inconclusive">🤔 Inconclusive (No clear winner)</option>
-                <option value="Winner">🏆 Winner (Variant Won)</option>
-                <option value="Loser">📉 Loser (Control Won)</option>
+                <option value="Inconclusive">🤔 Inconclusive</option>
+                <option value="Winner">🏆 Winner</option>
+                <option value="Loser">📉 Loser</option>
               </select>
             </div>
 
@@ -250,13 +242,13 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
                 <label className="block text-xs font-bold text-slate-600 mb-2">Select Winner</label>
                 <div className="space-y-2">
                   {winnerVariants.map(v => (
-                    <label key={v.id} className="flex items-center gap-3 p-3 glass-card cursor-pointer hover:shadow-md transition-all border-2 border-transparent has-[:checked]:border-emerald-500">
+                    <label key={v.id} className="flex items-center gap-3 p-3 neumorphic-card cursor-pointer hover:shadow-lg transition-all rounded-xl">
                       <input
                         type="radio"
                         name="winner"
                         value={v.id}
                         checked={formData.winner_variant_id === v.id}
-                        onChange={e => setFormData(prev => ({ ...prev, winner_variant_id: v.id }))}
+                        onChange={() => setFormData(prev => ({ ...prev, winner_variant_id: v.id }))}
                         className="accent-emerald-500"
                       />
                       <span className="font-bold text-sm">{v.variant_name}</span>
@@ -267,11 +259,11 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
             )}
           </div>
 
-          <div className="glass-card p-3 bg-blue-50 border border-blue-200">
+          <div className="glass-card-subtle p-3 bg-blue-50/80 border border-blue-200/50 rounded-xl">
             <div className="flex gap-2">
               <AlertCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-blue-800">
-                <strong>Next Step:</strong> Go to Experiment Details page to update actual sessions and conversion numbers.
+                <strong>Next Step:</strong> Update sessions and conversion data in Experiment Details.
               </p>
             </div>
           </div>
@@ -279,28 +271,19 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
       )
     }
 
-    // PAUSED
-    if (newStatus === 'Paused') {
-      return (
-        <div className="glass-card p-4 border-l-4 border-amber-500">
-          <p className="text-sm text-slate-700">
-            ⏸️ This will pause the experiment. You can resume it later by moving back to "Running".
-          </p>
-        </div>
-      )
-    }
+    return null
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-md" onClick={onClose} />
-      <div className="relative glass-modal max-w-lg w-full p-6 animate-in zoom-in-95">
+      <div className="relative glass-modal max-w-lg w-full p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h3 className="text-xl font-bold text-slate-900">Moving to {newStatus}</h3>
-            <p className="text-sm text-slate-600">{test.test_name}</p>
+            <p className="text-sm text-slate-600 mt-1">{test.test_name}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full">
+          <button onClick={onClose} className="p-2 neumorphic-button rounded-xl">
             <X size={20} />
           </button>
         </div>
@@ -308,13 +291,13 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
         {renderContent()}
 
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
-          <button onClick={onClose} className="px-5 py-2 glass-button">
+          <button onClick={onClose} className="px-5 py-2.5 neumorphic-button rounded-xl font-bold">
             Cancel
           </button>
           <button 
             onClick={handleSubmit} 
             disabled={saving}
-            className="px-6 py-2 bg-gradient-to-r from-slate-900 to-slate-700 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
+            className="px-6 py-2.5 bg-gradient-to-r from-slate-900 to-slate-700 text-white rounded-xl font-bold hover:shadow-xl transition-all disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Confirm'}
           </button>
@@ -324,39 +307,36 @@ function StageTransitionModal({ test, newStatus, onClose, onConfirm }) {
   )
 }
 
-// ===== ADVANCED FILTER MODAL =====
-
 function FilterModal({ filters, onApply, onClose }) {
   const [localFilters, setLocalFilters] = useState(filters)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-md" onClick={onClose} />
-      <div className="relative glass-modal max-w-2xl w-full p-6 animate-in zoom-in-95">
+      <div className="relative glass-modal max-w-2xl w-full p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-xl">
+            <div className="p-2.5 neumorphic-card rounded-xl">
               <SlidersHorizontal size={20} className="text-blue-600" />
             </div>
             <h3 className="text-xl font-bold text-slate-900">Advanced Filters</h3>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full">
+          <button onClick={onClose} className="p-2 neumorphic-button rounded-xl">
             <X size={20} />
           </button>
         </div>
 
         <div className="space-y-6">
-          {/* Date Range */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-3">📅 Date Range</label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-slate-600 mb-1">From</label>
                 <input
                   type="date"
                   value={localFilters.dateFrom}
                   onChange={e => setLocalFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none"
+                  className="w-[92%] px-3 py-2.5 neumorphic-input rounded-xl text-sm"
                 />
               </div>
               <div>
@@ -365,13 +345,12 @@ function FilterModal({ filters, onApply, onClose }) {
                   type="date"
                   value={localFilters.dateTo}
                   onChange={e => setLocalFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none"
+                  className="w-[92%] px-3 py-2.5 neumorphic-input rounded-xl text-sm"
                 />
               </div>
             </div>
           </div>
 
-          {/* Categories */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-3">🏷️ Categories</label>
             <div className="flex flex-wrap gap-2">
@@ -384,10 +363,10 @@ function FilterModal({ filters, onApply, onClose }) {
                       : [...localFilters.categories, cat]
                     setLocalFilters(prev => ({ ...prev, categories: newCats }))
                   }}
-                  className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                     localFilters.categories.includes(cat)
-                      ? 'bg-blue-500 text-white shadow-lg'
-                      : 'glass-button'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
+                      : 'neumorphic-button'
                   }`}
                 >
                   {cat}
@@ -396,7 +375,6 @@ function FilterModal({ filters, onApply, onClose }) {
             </div>
           </div>
 
-          {/* Status */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-3">📊 Status</label>
             <div className="flex flex-wrap gap-2">
@@ -414,7 +392,7 @@ function FilterModal({ filters, onApply, onClose }) {
                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
                       localFilters.statuses.includes(col.id)
                         ? `bg-gradient-to-r ${col.gradient} text-white shadow-lg`
-                        : 'glass-button'
+                        : 'neumorphic-button'
                     }`}
                   >
                     <Icon size={16} />
@@ -426,17 +404,15 @@ function FilterModal({ filters, onApply, onClose }) {
           </div>
         </div>
 
-        <div className="flex justify-between gap-3 mt-8 pt-4 border-t border-slate-200">
+        <div className="flex flex-col sm:flex-row justify-between gap-3 mt-8 pt-4 border-t border-slate-200">
           <button 
-            onClick={() => {
-              setLocalFilters({ dateFrom: '', dateTo: '', categories: [], statuses: [] })
-            }}
-            className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold"
+            onClick={() => setLocalFilters({ dateFrom: '', dateTo: '', categories: [], statuses: [] })}
+            className="px-4 py-2 text-slate-600 neumorphic-button rounded-xl font-bold"
           >
             Clear All
           </button>
           <div className="flex gap-3">
-            <button onClick={onClose} className="px-5 py-2 glass-button">
+            <button onClick={onClose} className="px-5 py-2.5 neumorphic-button rounded-xl font-bold">
               Cancel
             </button>
             <button 
@@ -444,7 +420,7 @@ function FilterModal({ filters, onApply, onClose }) {
                 onApply(localFilters)
                 onClose()
               }}
-              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-xl transition-all"
             >
               Apply Filters
             </button>
@@ -454,8 +430,6 @@ function FilterModal({ filters, onApply, onClose }) {
     </div>
   )
 }
-
-// ===== CONTEXT-AWARE EXPERIMENT CARD =====
 
 function ExperimentCard({ test, onClick }) {
   const pieScore = test.pie_potential && test.pie_importance && test.pie_ease
@@ -480,7 +454,7 @@ function ExperimentCard({ test, onClick }) {
               <p className="text-xs text-slate-600 line-clamp-2 mb-3">{test.hypothesis}</p>
             )}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+              <span className="text-[10px] font-bold text-blue-600 bg-blue-50/80 px-2 py-1 rounded-lg border border-blue-100">
                 {test.test_category || 'Uncategorized'}
               </span>
             </div>
@@ -491,9 +465,9 @@ function ExperimentCard({ test, onClick }) {
         return (
           <>
             <div className="flex justify-between items-start mb-2">
-              <h4 className="font-bold text-slate-900 text-sm line-clamp-2">{test.test_name}</h4>
+              <h4 className="font-bold text-slate-900 text-sm line-clamp-2 flex-1">{test.test_name}</h4>
               {pieScore && (
-                <div className="flex items-center gap-1 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-1 bg-purple-50/80 px-2 py-1 rounded-lg border border-purple-200/50 ml-2">
                   <Target size={10} className="text-purple-600" />
                   <span className="text-xs font-black text-purple-600">{pieScore}</span>
                 </div>
@@ -519,9 +493,9 @@ function ExperimentCard({ test, onClick }) {
         return (
           <>
             <div className="flex justify-between items-start mb-2">
-              <h4 className="font-bold text-slate-900 text-sm line-clamp-2">{test.test_name}</h4>
+              <h4 className="font-bold text-slate-900 text-sm line-clamp-2 flex-1">{test.test_name}</h4>
               {daysRunning !== null && (
-                <div className="flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-200 animate-pulse">
+                <div className="flex items-center gap-1 bg-indigo-50/80 px-2 py-1 rounded-lg border border-indigo-200/50 animate-pulse ml-2">
                   <Clock size={10} className="text-indigo-600" />
                   <span className="text-xs font-black text-indigo-600">{daysRunning}d</span>
                 </div>
@@ -543,12 +517,12 @@ function ExperimentCard({ test, onClick }) {
         return (
           <>
             <div className="flex justify-between items-start mb-2">
-              <h4 className="font-bold text-slate-900 text-sm line-clamp-2">{test.test_name}</h4>
+              <h4 className="font-bold text-slate-900 text-sm line-clamp-2 flex-1">{test.test_name}</h4>
               {test.outcome && (
-                <span className={`text-[10px] font-bold px-2 py-1 rounded ${
-                  test.outcome === 'Winner' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
-                  test.outcome === 'Loser' ? 'bg-red-100 text-red-700 border border-red-200' :
-                  'bg-slate-100 text-slate-700 border border-slate-200'
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ml-2 whitespace-nowrap ${
+                  test.outcome === 'Winner' ? 'bg-emerald-100/80 text-emerald-700 border border-emerald-200' :
+                  test.outcome === 'Loser' ? 'bg-red-100/80 text-red-700 border border-red-200' :
+                  'bg-slate-100/80 text-slate-700 border border-slate-200'
                 }`}>
                   {test.outcome === 'Winner' ? '🏆 Winner' : test.outcome === 'Loser' ? '📉 Loser' : '🤔 Inconclusive'}
                 </span>
@@ -557,7 +531,7 @@ function ExperimentCard({ test, onClick }) {
             {test.outcome === 'Winner' && test.uplift && (
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp size={14} className="text-emerald-600" />
-                <span className="text-sm font-black text-emerald-600">+{test.uplift}% Uplift</span>
+                <span className="text-sm font-black text-emerald-600">+{test.uplift}%</span>
               </div>
             )}
             {test.actual_end_date && (
@@ -568,19 +542,6 @@ function ExperimentCard({ test, onClick }) {
           </>
         )
 
-      // case 'Paused':
-      //   return (
-      //     <>
-      //       <h4 className="font-bold text-slate-900 text-sm mb-2 line-clamp-2">{test.test_name}</h4>
-      //       <p className="text-xs text-amber-600 mb-2 font-medium">⏸️ On Hold</p>
-      //       {test.actual_start_date && (
-      //         <p className="text-xs text-slate-600">
-      //           Started: {new Date(test.actual_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-      //         </p>
-      //       )}
-      //     </>
-      //   )
-
       default:
         return <h4 className="font-bold text-slate-900 text-sm">{test.test_name}</h4>
     }
@@ -589,17 +550,17 @@ function ExperimentCard({ test, onClick }) {
   return (
     <div 
       onClick={onClick}
-      className="glass-card p-4 cursor-pointer hover:shadow-xl transition-all duration-300 group mb-3 animate-in fade-in slide-in-from-bottom-2"
+      className="neumorphic-card p-4 cursor-pointer hover:shadow-xl transition-all duration-300 group mb-3 animate-in fade-in slide-in-from-bottom-2"
     >
       <div className="flex items-start justify-between mb-3">
-        <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-200">
+        <span className="text-[10px] font-bold text-slate-400 bg-slate-50/80 px-2 py-1 rounded-lg border border-slate-200/50">
           {test.test_number || 'N/A'}
         </span>
       </div>
       
       {renderContent()}
       
-      <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-slate-100/50 flex items-center justify-between">
         <span className="text-[10px] text-slate-400 font-medium">
           {test.test_category || 'Uncategorized'}
         </span>
@@ -608,8 +569,6 @@ function ExperimentCard({ test, onClick }) {
     </div>
   )
 }
-
-// ===== DRAGGABLE/DROPPABLE WRAPPERS =====
 
 function DraggableItem({ test, onClick }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -622,7 +581,7 @@ function DraggableItem({ test, onClick }) {
   }
 
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes} className="outline-none">
+    <div ref={setNodeRef} {...listeners} {...attributes} className="outline-none touch-manipulation">
       <ExperimentCard test={test} onClick={onClick} />
     </div>
   )
@@ -635,38 +594,38 @@ function DroppableColumn({ col, tests, navigate, loading }) {
   return (
     <div 
       ref={setNodeRef}
-      className={`flex-shrink-0 w-[320px] rounded-2xl flex flex-col transition-all duration-300 h-full ${
-        isOver ? 'ring-2 ring-blue-400 scale-105' : ''
+      className={`flex-shrink-0 w-full sm:w-80 md:w-[320px] rounded-2xl flex flex-col transition-all duration-300 h-full ${
+        isOver ? 'ring-4 ring-blue-400/50 scale-[1.02]' : ''
       }`}
     >
-      <div className="glass-card p-4 mb-3">
+      <div className="neumorphic-card p-4 mb-3 sticky top-0 z-10 bg-white/80 backdrop-blur-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl bg-gradient-to-br ${col.gradient} shadow-lg`}>
+            <div className={`p-2.5 rounded-xl bg-gradient-to-br ${col.gradient} shadow-lg`}>
               <Icon size={18} className="text-white" />
             </div>
             <span className="font-bold text-slate-900">{col.label}</span>
           </div>
-          <span className="text-sm font-black text-slate-600 glass-badge">
+          <span className="text-sm font-black text-slate-600 neumorphic-badge px-3 py-1 rounded-full">
             {loading ? '...' : tests.length}
           </span>
         </div>
       </div>
       
-      <div className={`flex-1 space-y-0 pb-4 min-h-[600px] overflow-y-auto custom-scrollbar ${
-        isOver ? 'bg-blue-50/30 rounded-xl' : ''
+      <div className={`flex-1 space-y-0 pb-4 min-h-[400px] sm:min-h-[600px] overflow-y-auto custom-scrollbar ${
+        isOver ? 'bg-blue-50/30 rounded-xl p-2' : ''
       }`}>
         {loading ? (
           <>
             {[1, 2, 3].map(i => (
-              <div key={i} className="glass-card p-4 mb-3 animate-pulse">
+              <div key={i} className="neumorphic-card p-4 mb-3 animate-pulse">
                 <div className="h-4 bg-slate-200 rounded mb-2" />
                 <div className="h-3 bg-slate-200 rounded w-2/3" />
               </div>
             ))}
           </>
         ) : tests.length === 0 ? (
-          <div className="glass-card p-8 text-center">
+          <div className="neumorphic-card p-8 text-center">
             <Icon size={32} className="text-slate-300 mx-auto mb-3" />
             <p className="text-xs font-bold text-slate-400">No experiments</p>
           </div>
@@ -684,10 +643,8 @@ function DroppableColumn({ col, tests, navigate, loading }) {
   )
 }
 
-// ===== TIMELINE VIEW =====
-
-function TimelineView({ tests, navigate, filters }) {
-  const [timeRange, setTimeRange] = useState('6months') // 'year', '6months', 'month'
+function TimelineView({ tests, navigate }) {
+  const [timeRange, setTimeRange] = useState('6months')
   const [currentDate, setCurrentDate] = useState(new Date())
 
   const getDateRange = () => {
@@ -738,7 +695,6 @@ function TimelineView({ tests, navigate, filters }) {
 
     if (!start || !end) return null
 
-    // Calculate position as percentage
     const totalDuration = range.end - range.start
     const startOffset = Math.max(0, start - range.start)
     const endOffset = Math.min(totalDuration, end - range.start)
@@ -772,25 +728,25 @@ function TimelineView({ tests, navigate, filters }) {
   })
 
   return (
-    <div className="glass-card p-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <div className="neumorphic-card p-4 sm:p-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div>
-          <h3 className="font-bold text-xl text-slate-900 flex items-center gap-2">
+          <h3 className="font-bold text-lg sm:text-xl text-slate-900 flex items-center gap-2">
             <CalendarIcon size={20} className="text-blue-500" />
             {getDateRange().label}
           </h3>
           <p className="text-xs text-slate-600 mt-1">{filteredTests.length} experiments in view</p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="flex gap-2 glass-card px-2 py-1">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-2 neumorphic-card px-2 py-1 rounded-xl">
             {['month', '6months', 'year'].map(range => (
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   timeRange === range
-                    ? 'bg-blue-500 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
                     : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
@@ -800,10 +756,10 @@ function TimelineView({ tests, navigate, filters }) {
           </div>
           
           <div className="flex gap-2">
-            <button onClick={() => changeRange(-1)} className="glass-button p-2">
+            <button onClick={() => changeRange(-1)} className="neumorphic-button p-2 rounded-xl">
               <ChevronLeft size={16} />
             </button>
-            <button onClick={() => changeRange(1)} className="glass-button p-2">
+            <button onClick={() => changeRange(1)} className="neumorphic-button p-2 rounded-xl">
               <ChevronRight size={16} />
             </button>
           </div>
@@ -811,7 +767,7 @@ function TimelineView({ tests, navigate, filters }) {
       </div>
 
       <div className="overflow-x-auto">
-        <div className="min-w-[800px]">
+        <div className="min-w-[600px] sm:min-w-[800px]">
           {filteredTests.map(test => {
             const barData = getBarStyle(test)
             if (!barData) return null
@@ -820,15 +776,15 @@ function TimelineView({ tests, navigate, filters }) {
               <div 
                 key={test.id}
                 onClick={() => navigate(`/experiment/${test.id}`)}
-                className="group relative grid grid-cols-[200px_1fr] gap-4 py-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-all"
+                className="group relative grid grid-cols-[150px_1fr] sm:grid-cols-[200px_1fr] gap-4 py-3 border-b border-slate-100/50 hover:bg-slate-50/50 cursor-pointer transition-all rounded-lg px-2"
               >
                 <div className="pr-4">
-                  <p className="font-bold text-sm text-slate-900 truncate">{test.test_name}</p>
+                  <p className="font-bold text-xs sm:text-sm text-slate-900 truncate">{test.test_name}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
-                      test.status === 'Running' ? 'bg-indigo-100 text-indigo-700' :
-                      test.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-                      'bg-slate-100 text-slate-700'
+                    <span className={`text-[10px] px-2 py-0.5 rounded-lg font-bold ${
+                      test.status === 'Running' ? 'bg-indigo-100/80 text-indigo-700' :
+                      test.status === 'Completed' ? 'bg-emerald-100/80 text-emerald-700' :
+                      'bg-slate-100/80 text-slate-700'
                     }`}>
                       {test.status}
                     </span>
@@ -837,11 +793,11 @@ function TimelineView({ tests, navigate, filters }) {
 
                 <div className="relative h-12 flex items-center">
                   <div 
-                    className={`absolute h-6 rounded-lg flex items-center px-3 text-[10px] font-bold transition-all group-hover:h-8 ${barData.className}`}
+                    className={`absolute h-6 rounded-lg flex items-center px-3 text-[10px] font-bold transition-all group-hover:h-8 border-2 ${barData.className}`}
                     style={barData.style}
                     title={barData.tooltip}
                   >
-                    <span className="truncate">{test.test_name}</span>
+                    <span className="truncate hidden sm:inline">{test.test_name}</span>
                   </div>
                 </div>
               </div>
@@ -859,8 +815,6 @@ function TimelineView({ tests, navigate, filters }) {
     </div>
   )
 }
-
-// ===== MAIN DASHBOARD =====
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -882,7 +836,8 @@ export default function Dashboard() {
   const [transitionModal, setTransitionModal] = useState(null)
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
@@ -921,13 +876,11 @@ export default function Dashboard() {
 
     if (newStatus === oldStatus) return
 
-    // Show transition modal for stages that need input
     if (['Planned', 'Running', 'Completed', 'Paused'].includes(newStatus)) {
       setTransitionModal({ test: activeTest, newStatus })
       return
     }
 
-    // Direct update for Backlog
     const { error } = await supabase
       .from('experiments')
       .update({ status: newStatus })
@@ -943,11 +896,9 @@ export default function Dashboard() {
 
   const filteredTests = useMemo(() => {
     return tests.filter(test => {
-      // Search
       const matchesSearch = test.test_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (test.test_number && test.test_number.toLowerCase().includes(searchQuery.toLowerCase()))
       
-      // Date Range
       let matchesDate = true
       if (filters.dateFrom || filters.dateTo) {
         const testDate = new Date(test.actual_start_date || test.planned_start_date || test.created_at)
@@ -955,11 +906,9 @@ export default function Dashboard() {
         if (filters.dateTo && testDate > new Date(filters.dateTo)) matchesDate = false
       }
       
-      // Categories
       const matchesCategory = filters.categories.length === 0 || 
         filters.categories.includes(test.test_category)
       
-      // Statuses
       const matchesStatus = filters.statuses.length === 0 || 
         filters.statuses.includes(test.status || 'Backlog')
       
@@ -982,8 +931,8 @@ export default function Dashboard() {
 
   if (!currentProject) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="glass-card p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 p-4">
+        <div className="neumorphic-card p-8 text-center max-w-md">
           <AlertCircle size={48} className="text-slate-400 mx-auto mb-4" />
           <p className="text-slate-600 font-bold">Please select a project to continue</p>
         </div>
@@ -994,136 +943,156 @@ export default function Dashboard() {
   return (
     <>
       <style>{`
-        .glass-card {
-          background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(20px) saturate(180%);
-          border: 1px solid rgba(255, 255, 255, 0.8);
-          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-          border-radius: 16px;
+        .glass-card-subtle {
+          background: rgba(255, 255, 255, 0.6);
+          backdrop-filter: blur(16px) saturate(150%);
+          border: 1px solid rgba(255, 255, 255, 0.7);
         }
         .glass-modal {
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(40px) saturate(200%);
           border: 1px solid rgba(255, 255, 255, 0.9);
-          box-shadow: 0 20px 60px 0 rgba(31, 38, 135, 0.2);
+          box-shadow: 0 25px 70px 0 rgba(31, 38, 135, 0.25);
           border-radius: 24px;
         }
-        .glass-button {
-          background: rgba(255, 255, 255, 0.6);
-          backdrop-filter: blur(10px);
+        .neumorphic-card {
+          background: linear-gradient(145deg, #ffffff, #f0f4f8);
+          box-shadow: 8px 8px 20px rgba(163, 177, 198, 0.3),
+                      -8px -8px 20px rgba(255, 255, 255, 0.9);
+          border-radius: 16px;
           border: 1px solid rgba(255, 255, 255, 0.8);
-          padding: 0.5rem 1rem;
-          border-radius: 12px;
-          font-weight: 700;
-          transition: all 0.3s;
         }
-        .glass-button:hover {
-          background: rgba(255, 255, 255, 0.9);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .neumorphic-button {
+          background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+          box-shadow: 5px 5px 12px rgba(163, 177, 198, 0.4),
+                      -5px -5px 12px rgba(255, 255, 255, 0.9);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .glass-badge {
-          background: rgba(255, 255, 255, 0.8);
-          padding: 0.25rem 0.75rem;
-          border-radius: 9999px;
-          border: 1px solid rgba(226, 232, 240, 0.5);
+        .neumorphic-button:hover {
+          box-shadow: 2px 2px 8px rgba(163, 177, 198, 0.3),
+                      -2px -2px 8px rgba(255, 255, 255, 0.8);
+          transform: translateY(-1px);
+        }
+        .neumorphic-button:active {
+          box-shadow: inset 3px 3px 8px rgba(163, 177, 198, 0.4),
+                      inset -3px -3px 8px rgba(255, 255, 255, 0.7);
+          transform: translateY(0);
+        }
+        .neumorphic-input {
+          background: linear-gradient(145deg, #f1f5f9, #ffffff);
+          box-shadow: inset 4px 4px 10px rgba(163, 177, 198, 0.3),
+                      inset -4px -4px 10px rgba(255, 255, 255, 0.8);
+          border: 1px solid rgba(226, 232, 240, 0.6);
+          transition: all 0.3s ease;
+        }
+        .neumorphic-input:focus {
+          box-shadow: inset 2px 2px 6px rgba(59, 130, 246, 0.2),
+                      inset -2px -2px 6px rgba(255, 255, 255, 0.9);
+          border-color: rgba(59, 130, 246, 0.4);
+        }
+        .neumorphic-inset {
+          background: linear-gradient(145deg, #e8eef5, #f8fafc);
+          box-shadow: inset 6px 6px 14px rgba(163, 177, 198, 0.25),
+                      inset -6px -6px 14px rgba(255, 255, 255, 0.7);
+        }
+        .neumorphic-badge {
+          background: linear-gradient(145deg, #ffffff, #f1f5f9);
+          box-shadow: 3px 3px 8px rgba(163, 177, 198, 0.3),
+                      -3px -3px 8px rgba(255, 255, 255, 0.8);
         }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-          height: 6px;
+          width: 8px;
+          height: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(241, 245, 249, 0.5);
+          background: rgba(241, 245, 249, 0.6);
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(148, 163, 184, 0.5);
+          background: linear-gradient(145deg, #cbd5e1, #94a3b8);
           border-radius: 10px;
+          box-shadow: inset 2px 2px 4px rgba(148, 163, 184, 0.3);
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(100, 116, 139, 0.7);
+          background: linear-gradient(145deg, #94a3b8, #64748b);
         }
-        @keyframes shimmer {
-          0% { background-position: -1000px 0; }
-          100% { background-position: 1000px 0; }
-        }
-        .animate-shimmer {
-          animation: shimmer 2s infinite linear;
-          background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%);
-          background-size: 1000px 100%;
+        @media (max-width: 640px) {
+          .neumorphic-card {
+            box-shadow: 5px 5px 15px rgba(163, 177, 198, 0.25),
+                        -5px -5px 15px rgba(255, 255, 255, 0.8);
+          }
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 p-4 md:p-8">
-        <div className="max-w-[1900px] mx-auto space-y-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/40 p-3 sm:p-4 md:p-8">
+        <div className="max-w-[1900px] mx-auto space-y-4 sm:space-y-6">
           
-          {/* Header */}
-          <div className="glass-card p-6">
+          <div className="neumorphic-card p-4 sm:p-6">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-black text-slate-900 mb-1 flex items-center gap-3">
-                  <Sparkles size={28} className="text-blue-500" />
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-1 flex items-center gap-2 sm:gap-3">
+                  <Sparkles size={24} className="text-blue-500 sm:w-7 sm:h-7" />
                   Experimentation Hub
                 </h1>
-                <p className="text-sm text-slate-600 font-medium">{currentProject.name}</p>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium">{currentProject.name}</p>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto">
                 <button 
                   onClick={() => setView(view === 'kanban' ? 'timeline' : 'kanban')}
-                  className="glass-button flex items-center gap-2"
+                  className="neumorphic-button flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-sm flex-1 sm:flex-initial justify-center"
                 >
                   {view === 'kanban' ? <CalendarIcon size={16} /> : <Grid3x3 size={16} />}
-                  {view === 'kanban' ? 'Timeline' : 'Kanban'}
+                  <span className="hidden sm:inline">{view === 'kanban' ? 'Timeline' : 'Kanban'}</span>
                 </button>
                 
                 <button 
                   onClick={() => navigate('/newtest')} 
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-xl transition-all flex items-center gap-2"
+                  className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-xl transition-all flex items-center gap-2 text-sm flex-1 sm:flex-initial justify-center"
                 >
-                  <Plus size={18} strokeWidth={3} /> New Test
+                  <Plus size={18} strokeWidth={3} />
+                  <span className="hidden sm:inline">New Test</span>
+                  <span className="sm:hidden">New</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
               { icon: Layers, label: 'Total', value: stats.total, gradient: 'from-slate-500 to-slate-600' },
               { icon: Play, label: 'Live', value: stats.running, gradient: 'from-indigo-500 to-purple-600' },
               { icon: CheckCircle, label: 'Done', value: stats.completed, gradient: 'from-emerald-500 to-teal-600' },
               { icon: Trophy, label: 'Winners', value: stats.wins, gradient: 'from-amber-500 to-orange-600' }
             ].map(({ icon: Icon, label, value, gradient }) => (
-              <div key={label} className="glass-card p-4 hover:shadow-xl transition-all group">
+              <div key={label} className="neumorphic-card p-3 sm:p-4 hover:shadow-2xl transition-all group">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-xs font-bold text-slate-600 uppercase mb-1">{label}</p>
-                    <p className="text-3xl font-black text-slate-900 group-hover:text-blue-600 transition-colors">
+                    <p className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase mb-1">{label}</p>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 group-hover:text-blue-600 transition-colors">
                       {value}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} shadow-lg group-hover:scale-110 transition-transform`}>
-                    <Icon size={20} className="text-white" />
+                  <div className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${gradient} shadow-lg group-hover:scale-110 transition-transform`}>
+                    <Icon size={16} className="text-white sm:w-5 sm:h-5" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Search & Filters */}
-          <div className="glass-card p-3 flex items-center gap-3">
+          <div className="neumorphic-card p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input 
                 type="text"
                 placeholder="Search experiments..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white/50 border-2 border-white/60 rounded-xl outline-none focus:border-blue-400 transition-all font-medium"
+                className="w-[80%] md:w-[92%] pl-9 sm:pl-12 pr-10 py-2.5 sm:py-3 neumorphic-input rounded-xl outline-none font-medium text-sm"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2">
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2">
                   <X size={16} className="text-slate-400" />
                 </button>
               )}
@@ -1131,19 +1100,18 @@ export default function Dashboard() {
             
             <button 
               onClick={() => setShowFilters(true)}
-              className="glass-button flex items-center gap-2 relative"
+              className="neumorphic-button flex items-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl font-bold text-sm relative justify-center"
             >
-              <Filter size={18} />
-              Filters
+              <Filter size={16} />
+              <span className="hidden sm:inline">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
                   {activeFilterCount}
                 </span>
               )}
             </button>
           </div>
 
-          {/* Main Content */}
           {view === 'kanban' ? (
             <DndContext 
               sensors={sensors} 
@@ -1151,7 +1119,7 @@ export default function Dashboard() {
               onDragStart={onDragStart} 
               onDragEnd={onDragEnd}
             >
-              <div className="flex gap-4 overflow-x-auto pb-8 min-h-[700px]">
+              <div className="flex flex-col sm:flex-row gap-4 overflow-x-auto pb-4 sm:pb-8 min-h-[500px] sm:min-h-[700px]">
                 {COLUMNS.map(col => (
                   <DroppableColumn 
                     key={col.id} 
@@ -1165,19 +1133,18 @@ export default function Dashboard() {
               
               <DragOverlay>
                 {activeDragItem && (
-                  <div className="w-[320px] transform rotate-3 scale-105 opacity-90">
+                  <div className="w-full sm:w-80 md:w-[320px] transform rotate-2 scale-105 opacity-90">
                     <ExperimentCard test={activeDragItem} onClick={() => {}} />
                   </div>
                 )}
               </DragOverlay>
             </DndContext>
           ) : (
-            <TimelineView tests={filteredTests} navigate={navigate} filters={filters} />
+            <TimelineView tests={filteredTests} navigate={navigate} />
           )}
         </div>
       </div>
 
-      {/* Modals */}
       {showFilters && (
         <FilterModal 
           filters={filters} 
