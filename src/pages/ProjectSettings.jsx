@@ -32,29 +32,36 @@ export default function ProjectSettings() {
     try {
       setLoading(true)
       
-      const { data: proj, error: projError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single()
-      
-      if (projError) throw projError
-      setProject(proj)
+      // Fetch Project and Members (using the explicit Foreign Key hint)
+      const [projRes, memsRes] = await Promise.all([
+        supabase
+          .from('projects')
+          .select('*')
+          .eq('id', projectId)
+          .single(),
+        supabase
+          .from('project_members')
+          .select(`
+            id,
+            role,
+            email,
+            user_id,
+            status,
+            joined_at,
+            profiles!project_members_user_id_fkey (
+              full_name,
+              avatar_url
+            )
+          `)
+          .eq('project_id', projectId)
+          .order('joined_at', { ascending: true })
+      ])
 
-      const { data: mems, error: memError } = await supabase
-        .from('project_members')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            avatar_url
-          )
-        `)
-        .eq('project_id', projectId)
-        .order('joined_at', { ascending: true })
+      if (projRes.error) throw projRes.error
+      if (memsRes.error) throw memsRes.error
 
-      if (memError) throw memError
-      setMembers(mems || [])
+      setProject(projRes.data)
+      setMembers(memsRes.data || [])
 
     } catch (error) {
       console.error("Settings Error:", error)
@@ -82,6 +89,7 @@ export default function ProjectSettings() {
 
       if (error) throw error
       toast.success("Identity Updated")
+      navigate('/')
     } catch (error) {
       toast.error("Update failed")
     } finally {
@@ -134,6 +142,36 @@ export default function ProjectSettings() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100/50 pb-32">
+      
+      {/* Header Area */}
+      <div className="bg-gradient-to-br from-white/80 via-slate-50/50 to-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <button 
+              onClick={() => navigate('/')} 
+              className="
+                shrink-0 p-2 sm:p-2.5 
+                bg-gradient-to-br from-slate-50 to-white
+                border border-slate-200/60
+                rounded-lg sm:rounded-xl 
+                shadow-[2px_2px_6px_rgba(0,0,0,0.06),-2px_-2px_6px_rgba(255,255,255,0.9)]
+                hover:shadow-[inset_2px_2px_6px_rgba(0,0,0,0.06),inset_-2px_-2px_6px_rgba(255,255,255,0.9)]
+                transition-all duration-200
+                group
+              "
+            >
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-slate-600 group-hover:text-slate-900" />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg lg:text-xl font-black text-slate-900 tracking-tight truncate">{project?.name}</h1>
+              <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <Layout size={10} className="shrink-0" /> 
+                <span className="hidden sm:inline">Project</span> Settings
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-10 grid lg:grid-cols-[260px_1fr] gap-6 lg:gap-10">
         
@@ -361,7 +399,6 @@ export default function ProjectSettings() {
                     text-white px-5 sm:px-6 py-3 rounded-xl sm:rounded-2xl 
                     font-bold text-sm sm:text-base flex items-center justify-center gap-2 
                     shadow-[0_4px_16px_rgba(99,102,241,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]
-                    hover:shadow-[0_6px_20px_rgba(99,102,241,0.4),inset_0_1px_0_rgba(255,255,255,0.3)]
                     hover:scale-[1.02]
                     active:scale-[0.98]
                     transition-all
@@ -374,6 +411,7 @@ export default function ProjectSettings() {
               <div className="divide-y divide-slate-200/60">
                 {members.map((member) => {
                   const displayName = member.profiles?.full_name || (member.email ? member.email.split('@')[0] : 'Unknown User');
+                  const avatar = member.profiles?.avatar_url;
                   const initial = member.email ? member.email[0].toUpperCase() : '?';
                   const isYou = member.user_id === user?.id;
 
@@ -386,9 +424,11 @@ export default function ProjectSettings() {
                           flex items-center justify-center 
                           font-black text-sm text-slate-600 
                           shadow-[inset_2px_2px_4px_rgba(0,0,0,0.08),inset_-2px_-2px_4px_rgba(255,255,255,0.9)]
-                          ring-2 ring-white
+                          ring-2 ring-white overflow-hidden
                         ">
-                          {initial}
+                          {avatar ? (
+                            <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
+                          ) : initial}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-black text-sm sm:text-base text-slate-900 flex flex-wrap items-center gap-2 mb-0.5">
@@ -420,11 +460,10 @@ export default function ProjectSettings() {
                               pl-4 pr-10 py-2.5 rounded-xl 
                               text-[10px] sm:text-xs font-black text-slate-700 
                               shadow-[inset_2px_2px_4px_rgba(0,0,0,0.06),inset_-2px_-2px_4px_rgba(255,255,255,0.9)]
-                              focus:shadow-[inset_2px_2px_6px_rgba(99,102,241,0.1),inset_-2px_-2px_6px_rgba(255,255,255,0.9)]
                               focus:border-indigo-200
                               outline-none 
                               cursor-pointer 
-                              disabled:opacity-50 disabled:cursor-not-allowed
+                              disabled:opacity-50 
                               uppercase tracking-wider
                               transition-all
                             "
@@ -446,7 +485,6 @@ export default function ProjectSettings() {
                               hover:text-red-500 hover:bg-red-50 
                               rounded-xl 
                               shadow-[2px_2px_4px_rgba(0,0,0,0.04),-1px_-1px_2px_rgba(255,255,255,0.9)]
-                              hover:shadow-[inset_2px_2px_4px_rgba(239,68,68,0.1)]
                               transition-all
                             "
                           >
@@ -494,9 +532,7 @@ export default function ProjectSettings() {
                   text-white 
                   rounded-xl sm:rounded-2xl 
                   font-black text-sm sm:text-base
-                  shadow-[0_4px_16px_rgba(239,68,68,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]
-                  hover:shadow-[0_6px_20px_rgba(239,68,68,0.4),inset_0_1px_0_rgba(255,255,255,0.3)]
-                  hover:scale-[1.02]
+                  hover:shadow-lg
                   active:scale-[0.98]
                   transition-all
                 "
@@ -531,7 +567,7 @@ export default function ProjectSettings() {
 
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <button
-                  onClick={() => fetchProjectData()}
+                  onClick={() => navigate('/')}
                   className="
                     flex-1 sm:flex-none
                     px-6 py-3
@@ -559,7 +595,6 @@ export default function ProjectSettings() {
                     flex items-center justify-center gap-2
                     shadow-xl shadow-slate-200
                     hover:bg-indigo-600
-                    hover:shadow-indigo-200
                     active:scale-[0.98]
                     disabled:opacity-50
                     transition-all
