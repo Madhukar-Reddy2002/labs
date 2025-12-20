@@ -64,7 +64,7 @@ export default function ProjectSwitcher() {
             group-hover:scale-110
             transition-all duration-300
           ">
-            <FlaskConical size={14} className="sm:w-[18px] sm:h-[18px] group-hover:rotate-12 transition-transform duration-300" strokeWidth={2.5} />
+            <Briefcase size={14} className="sm:w-[18px] sm:h-[18px] group-hover:rotate-12 transition-transform duration-300" strokeWidth={2.5} />
             {isOpen && (
               <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-white/20 animate-pulse" />
             )}
@@ -106,7 +106,7 @@ export default function ProjectSwitcher() {
           {/* Dropdown Menu */}
           <div className="
             absolute top-full left-0 right-0 sm:left-0 sm:right-auto mt-3 sm:mt-4 
-            w-full sm:w-[420px] md:w-[480px] z-50
+            w-full  z-50
             rounded-2xl sm:rounded-3xl p-4 sm:p-5
             bg-gradient-to-br from-white/95 via-slate-50/90 to-white/95
             backdrop-blur-2xl
@@ -189,7 +189,7 @@ export default function ProjectSwitcher() {
               {/* Empty State */}
               {filteredProjects.length === 0 && (
                 <div className="py-16 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center shadow-inner">
+                  <div className="w-20 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center shadow-inner">
                     <Search size={24} className="text-slate-300" />
                   </div>
                   <div className="text-sm font-bold text-slate-500 mb-1">No clients found</div>

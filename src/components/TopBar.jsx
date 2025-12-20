@@ -110,7 +110,7 @@ export default function TopBar() {
             </nav>
 
             {/* Project Switcher - Always visible */}
-            <div className="min-w-0 max-w-[180px] sm:max-w-[200px] md:max-w-xs flex-1">
+            <div className="min-w-0 max-w-[250px] sm:max-w-[200px] md:max-w-xs flex-1">
               <div className="bg-slate-100/60 border border-slate-200/50 rounded-xl px-3 py-2 md:px-4 md:py-2.5 backdrop-blur-sm hover:bg-slate-100 transition-colors">
                 <ProjectSwitcher />
               </div>
